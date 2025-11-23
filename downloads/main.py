@@ -516,6 +516,11 @@ def download_spotify(url: str, target_dir: str, enforce_mp3: bool = True) -> str
     raise RuntimeError('spotdl completed but no audio files found.')
 
 # ----------------- Main API -----------------
+@app.get("/health")
+async def health_check():
+    """Health check endpoint - no auth required"""
+    return JSONResponse(status_code=200, content={"status": "ok", "message": "Backend is running"})
+
 @app.post("/download")
 async def download_endpoint(req: DownloadRequest, x_api_key: str = Header(None)):
     validate_api_key(x_api_key)
