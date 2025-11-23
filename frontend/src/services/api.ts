@@ -1,6 +1,7 @@
 // Frontend API client: uses GET /download?url=... with x-api-key header
-const API_URL = (import.meta as any).env?.VITE_API_URL || 'http://localhost:8000/download';
-const API_KEY = (import.meta as any).env?.VITE_API_KEY || '';
+const metaEnv = (import.meta as unknown as { env?: { VITE_API_URL?: string; VITE_API_KEY?: string } }).env;
+const API_URL = metaEnv?.VITE_API_URL || 'http://localhost:8000/download';
+const API_KEY = metaEnv?.VITE_API_KEY || '';
 
 export interface ApiError {
   message: string;
@@ -66,17 +67,14 @@ export async function downloadMedia(url: string, mediaType?: string): Promise<{ 
       if (json && Array.isArray(json.files) && json.files.length > 0) {
         const results: Array<{ blob: Blob; filename: string }> = [];
         for (const entry of json.files) {
-          try {
-            const fileResp = await fetch((import.meta as any).env?.VITE_API_URL?.replace('/download','') + entry.download_url, {
-              method: 'GET',
-              headers: { 'x-api-key': API_KEY, 'Accept': '*/*' }
-            });
-            if (!fileResp.ok) throw new Error(`Failed to fetch file: ${entry.filename} (${fileResp.status})`);
-            const fileBlob = await fileResp.blob();
-            results.push({ blob: fileBlob, filename: entry.filename });
-          } catch (err) {
-            throw err;
-          }
+          const fileBase = (import.meta.env?.VITE_API_URL || API_URL).replace('/download', '');
+          const fileResp = await fetch(fileBase + entry.download_url, {
+            method: 'GET',
+            headers: { 'x-api-key': API_KEY, 'Accept': '*/*' }
+          });
+          if (!fileResp.ok) throw new Error(`Failed to fetch file: ${entry.filename} (${fileResp.status})`);
+          const fileBlob = await fileResp.blob();
+          results.push({ blob: fileBlob, filename: entry.filename });
         }
         return results;
       }
